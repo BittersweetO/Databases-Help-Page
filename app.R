@@ -5,13 +5,13 @@ library(RODBC)
 ServerDatabases <- read.csv(file = "Databases.csv")
 SQLcon12 <- odbcDriverConnect('driver={SQL Server}; server=s-kv-center-s12')
 SQLcon64 <- odbcDriverConnect('driver={SQL Server}; server=s-kv-center-s64')
-Databases12 <- sqlQuery(SQLcon12, 'SELECT name AS DatabaseName FROM master.dbo.sysdatabases ORDER BY name')
-Databases64 <- sqlQuery(SQLcon64, 'SELECT name AS DatabaseName FROM master.dbo.sysdatabases ORDER BY name')
+Databases12 <- sqlQuery(SQLcon12, 'SELECT name AS DatabasesName FROM master.dbo.sysdatabases ORDER BY name')
+Databases64 <- sqlQuery(SQLcon64, 'SELECT name AS DatabasesName FROM master.dbo.sysdatabases ORDER BY name')
 odbcClose(SQLcon12)
 odbcClose(SQLcon64)
-ChooseDatabases <-data.frame(
-  Server = c(rep("s-kv-center-s12", nrow(Databases12)), rep("s-kv-center-s64", nrow(Databases64))),
-  DatabaseName = rbind(Databases12, Databases64)
+ChooseDatabase <-data.frame(
+  ServerName = c(rep("s-kv-center-s12", nrow(Databases12)), rep("s-kv-center-s64", nrow(Databases64))),
+  DatabasesName = rbind(Databases12, Databases64)
 )
 
 ui <- dashboardPage(
@@ -40,7 +40,7 @@ server <- function(input, output){
   output$Database <- renderUI({selectInput(inputId = "Database",  label = "Database", choices = sort(ChooseDatabase$DatabasesName[ChooseDatabase$ServerName == input$SQLserver]), selected = 1)})
   values <- reactiveValues(DB = ServerDatabase)
   observeEvent(input$Add, {
-    New <-data.frame(ID = length (ServerDatabase) + 1, ServerName = input$SQLserver, DatabasesName = input$Database, Name = input$Table , Columns = input$Columns, Description = input$Description)
+    New <-data.frame(ServerName = input$SQLserver, DatabasesName = input$Database, Name = input$Table , Columns = input$Columns, Description = input$Description)
     values$DB <- rbind(values$DB, New)
     ServerDatabase <<- values$DB
   })
