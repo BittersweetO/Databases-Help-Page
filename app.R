@@ -5,8 +5,8 @@ library(RODBC)
 #reading server and databases names and creating dataframe of it
 SQLcon12 <- odbcDriverConnect('driver={SQL Server}; server=s-kv-center-s12')
 SQLcon64 <- odbcDriverConnect('driver={SQL Server}; server=s-kv-center-s64')
-Databases12 <- sqlQuery(SQLcon12, 'SELECT name AS DatabasesName FROM master.dbo.sysdatabases ORDER BY name')
-Databases64 <- sqlQuery(SQLcon64, 'SELECT name AS DatabasesName FROM master.dbo.sysdatabases ORDER BY name')
+Databases12 <- sqlQuery(SQLcon12, 'SELECT name AS DatabasesName FROM sys.databases d WHERE d.database_id > 4 ORDER BY name')
+Databases64 <- sqlQuery(SQLcon64, 'SELECT name AS DatabasesName FROM sys.databases d WHERE d.database_id > 4 ORDER BY name')
 odbcClose(SQLcon12)
 odbcClose(SQLcon64)
 
