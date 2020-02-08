@@ -27,22 +27,35 @@ ui <- dashboardPage(
   dashboardSidebar(
     selectInput(inputId = "SQLserver", label = "Server",   choices = sort(ChooseDatabase$ServerName), selected = 1),
     uiOutput("Database"),
-    textInput(inputId = "Table",       label = "Table or View name"),
-    textAreaInput(inputId = "Columns", label = "Columns description"),
+    uiOutput("Table"),
     textInput(inputId = "Description", label = "Database descripption"),
     actionButton(inputId = "Add",      label = "Add")
   ),
   dashboardBody(
-    DT::dataTableOutput(outputId = "table")
+    DT::dataTableOutput(outputId = "table"),
   )
 )
 
 server <- function(input, output){
-  output$Database <- renderUI({selectInput(inputId = "Database",  label = "Database", choices = sort(ChooseDatabase$DatabasesName[ChooseDatabase$ServerName == input$SQLserver]), selected = 1)})
   values <- reactiveValues()
+  output$Database <- renderUI({selectInput(inputId = "Database",  label = "Database", choices = sort(ChooseDatabase$DatabasesName[ChooseDatabase$ServerName == input$SQLserver]), selected = 1)})
+  TableSelect <- reactive({
+    SQLcon12 <- odbcDriverConnect('driver={SQL Server}; server=s-kv-center-s12')
+    SQLcon64 <- odbcDriverConnect('driver={SQL Server}; server=s-kv-center-s64')
+     if(input$SQLserver == "s-kv-center-s12"){
+     tempdf <-  sqlQuery(SQLcon12, paste("SELECT TABLE_NAME FROM ",input$Database,".INFORMATION_SCHEMA.TABLES;", sep = ""))
+    }else{
+     tempdf <-  sqlQuery(SQLcon64, paste("SELECT TABLE_NAME FROM ",input$Database,".INFORMATION_SCHEMA.TABLES;", sep = ""))
+      }
+    odbcClose(SQLcon12)
+    odbcClose(SQLcon64)
+    tempdf
+    })
+  output$Table <- renderUI({selectInput(inputId = "Table", label = "Table or View name", choices = TableSelect())})
+  
   values$DB <- read.csv(file = "Databases.csv")
   observeEvent(input$Add, {
-    New <-data.frame(ServerName = input$SQLserver, DatabasesName = input$Database, Name = input$Table , Columns = input$Columns, Description = input$Description)
+    New <-data.frame(ServerName = input$SQLserver, DatabasesName = input$Database, Name = input$Table, Description = input$Description)
     values$DB <- rbind(values$DB, New)
     ServerDatabase <<- values$DB
     write.csv(ServerDatabase, file = "Databases.csv", row.names = F)
