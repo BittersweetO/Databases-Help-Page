@@ -55,7 +55,7 @@ server <- function(input, output){
   
   values$DB <- read.csv(file = "Databases.csv")
   observeEvent(input$Add, {
-    New <-data.frame(ServerName = input$SQLserver, DatabasesName = input$Database, Name = input$Table, Description = input$Description)
+    New <-data.frame(ServerName = input$SQLserver, DatabasesName = input$Database, TableName = input$Table, Description = input$Description)
     values$DB <- rbind(values$DB, New)
     ServerDatabase <<- values$DB
     write.csv(ServerDatabase, file = "Databases.csv", row.names = F)
