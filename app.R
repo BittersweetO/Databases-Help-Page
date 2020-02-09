@@ -68,7 +68,7 @@ server <- function(input, output){
   })
   
   output$table <- DT::renderDataTable({
-    DT::datatable(values$DB, options = list(paging = F), editable = T, selection = 'single')
+    DT::datatable(values$DB, options = list(paging = F), editable = list(target = "cell", disable = list(columns = c(0:3))), selection = 'single')
   })
   proxy <- dataTableProxy(outputId = "table")
   observeEvent(input$table_cell_edit, {
