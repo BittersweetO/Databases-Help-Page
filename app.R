@@ -25,14 +25,20 @@ ui <- dashboardPage(
       headerText = "See also:")
   ),
   dashboardSidebar(
-    selectInput(inputId = "SQLserver", label = "Server",   choices = sort(ChooseDatabase$ServerName), selected = 1),
+    selectInput(  inputId = "SQLserver",   label = "Server",   choices = sort(ChooseDatabase$ServerName), selected = 1),
     uiOutput("Database"),
     uiOutput("Table"),
-    textInput(inputId = "Description", label = "Database descripption"),
-    actionButton(inputId = "Add",      label = "Add")
+    textAreaInput(inputId = "Description", label = "Database descripption"),
+    actionButton( inputId = "Add",         label = "Add"),
+    actionButton( inputId = "Delete",      label = "Delete")
   ),
   dashboardBody(
-    DT::dataTableOutput(outputId = "table"),
+    tabsetPanel(
+    tabPanel( title = "Tables List",
+    DT::dataTableOutput(outputId = "table")
+    ),
+    tabPanel( title = "Details")
+    )
   )
 )
 
@@ -62,7 +68,7 @@ server <- function(input, output){
   })
   
   output$table <- DT::renderDataTable({
-    DT::datatable(values$DB, options = list(paging = F), editable = T)
+    DT::datatable(values$DB, options = list(paging = F), editable = T, selection = 'single')
   })
   proxy <- dataTableProxy(outputId = "table")
   observeEvent(input$table_cell_edit, {
@@ -72,6 +78,14 @@ server <- function(input, output){
     v <- info$value
     values$DB[i,j] <<- DT::coerceValue(v, values$DB[i,j])
     replaceData(proxy, values$DB, resetPaging = F, rownames = F)
+    ServerDatabase <<- values$DB
+    write.csv(ServerDatabase, file = "Databases.csv", row.names = F)
+  })
+  observeEvent(input$Delete, {
+    if(!is.null(input$Delete)){
+        values$DB <- values$DB[-as.numeric(input$Delete),]
+    }
+    values$DB
     ServerDatabase <<- values$DB
     write.csv(ServerDatabase, file = "Databases.csv", row.names = F)
   })
