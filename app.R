@@ -30,14 +30,16 @@ ui <- dashboardPage(
     uiOutput("Table"),
     textAreaInput(inputId = "Description", label = "Database descripption"),
     actionButton( inputId = "Add",         label = "Add",    icon("plus")),
-    actionButton( inputId = "Delete",      label = "Delete", icon("trash-alt"))
+    actionButton( inputId = "Delete",      label = "Delete", icon("trash-alt")),
+    actionButton( inputId = "Details",     label = "Details")
   ),
   dashboardBody(
     tabsetPanel(
     tabPanel( title = "Tables List",
     DT::dataTableOutput(outputId = "table")
     ),
-    tabPanel( title = "Details")
+    tabPanel( title = "Details",
+    DT::dataTableOutput(outputId = "coltable"))
     )
   )
 )
@@ -85,12 +87,22 @@ server <- function(input, output){
     req(input$table_rows_selected)
     i <- input$table_rows_selected
     if(!is.null(input$input$table_rows_selected)){
-        values$DB <- values$DB[-as.numeric(?input$table_rows_selected),]
+        values$DB <- values$DB[-as.numeric(input$table_rows_selected),]
     }
     values$DB <- values$DB[-i,]
     ServerDatabase <<- values$DB
     write.csv(ServerDatabase, file = "Databases.csv", row.names = F)
   })
+  observeEvent(input$Details,{
+    req(input$table_rows_selected)
+    i <- input$table_rows_selected
+    SQLcon <- odbcDriverConnect(paste('driver={SQL Server}; server=',values$DB[i,1],'', sep = ""))
+    collist <- sqlQuery(SQLcon, paste("Select COLUMN_NAME FROM ",values$DB[i,2],".INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME ='",values$DB[i,3],"' ORDER BY COLUMN_NAME", sep = ""))
+    DetailsTable <- data.frame(Column = collist, Description = NA)
+    output$coltable <- DT::renderDataTable({
+      DT::datatable(DetailsTable, options = list(paging = F), selection = 'single', class = 'cell-border stripe', style = 'bootstrap' )
+    })
+  })
 }
-
+ 
 shinyApp(ui, server)
