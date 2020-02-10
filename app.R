@@ -29,8 +29,8 @@ ui <- dashboardPage(
     uiOutput("Database"),
     uiOutput("Table"),
     textAreaInput(inputId = "Description", label = "Database descripption"),
-    actionButton( inputId = "Add",         label = "Add"),
-    actionButton( inputId = "Delete",      label = "Delete")
+    actionButton( inputId = "Add",         label = "Add",    icon("plus")),
+    actionButton( inputId = "Delete",      label = "Delete", icon("trash-alt"))
   ),
   dashboardBody(
     tabsetPanel(
@@ -68,7 +68,7 @@ server <- function(input, output){
   })
   
   output$table <- DT::renderDataTable({
-    DT::datatable(values$DB, options = list(paging = F), editable = list(target = "cell", disable = list(columns = c(0:3))), selection = 'single')
+    DT::datatable(values$DB, options = list(paging = F), editable = list(target = "cell", disable = list(columns = c(0:3))), selection = 'single', class = 'cell-border stripe', style = 'bootstrap' )
   })
   proxy <- dataTableProxy(outputId = "table")
   observeEvent(input$table_cell_edit, {
@@ -82,10 +82,12 @@ server <- function(input, output){
     write.csv(ServerDatabase, file = "Databases.csv", row.names = F)
   })
   observeEvent(input$Delete, {
-    if(!is.null(input$Delete)){
-        values$DB <- values$DB[-as.numeric(input$Delete),]
+    req(input$table_rows_selected)
+    i <- input$table_rows_selected
+    if(!is.null(input$input$table_rows_selected)){
+        values$DB <- values$DB[-as.numeric(?input$table_rows_selected),]
     }
-    values$DB
+    values$DB <- values$DB[-i,]
     ServerDatabase <<- values$DB
     write.csv(ServerDatabase, file = "Databases.csv", row.names = F)
   })
