@@ -2,6 +2,7 @@ library(shiny)
 library(shinydashboard)
 library(DT)
 library(RODBC)
+library(dplyr)
 #reading server and databases names and creating dataframe of it
 SQLcon12 <- odbcDriverConnect('driver={SQL Server}; server=s-kv-center-s12')
 SQLcon64 <- odbcDriverConnect('driver={SQL Server}; server=s-kv-center-s64')
@@ -39,7 +40,10 @@ ui <- dashboardPage(
     DT::dataTableOutput(outputId = "table")
     ),
     tabPanel( title = "Details",
-    DT::dataTableOutput(outputId = "coltable"))
+    DT::dataTableOutput(outputId = "coltable"),
+    actionButton( inputId = "Save",         label = "Save")
+    )
+    
     )
   )
 )
@@ -62,6 +66,7 @@ server <- function(input, output){
   output$Table <- renderUI({selectInput(inputId = "Table", label = "Table or View name", choices = TableSelect())})
   
   values$DB <- read.csv(file = "Databases.csv")
+  values$CL <- read.csv(file = "Columns.csv")
   observeEvent(input$Add, {
     New <-data.frame(ServerName = input$SQLserver, DatabasesName = input$Database, TableName = input$Table, Description = input$Description)
     values$DB <- rbind(values$DB, New)
@@ -96,13 +101,36 @@ server <- function(input, output){
   observeEvent(input$Details,{
     req(input$table_rows_selected)
     i <- input$table_rows_selected
+    if(nrow(values$CL %>%
+       filter(Database == values$DB[i,2], Table == values$DB[i,3])) > 0){
+      values$DetailsTable <- values$CL %>%
+        filter(Database == values$DB[i,2], Table == values$DB[i,3]) %>%
+        select(ColumnName, Description)
+    }else{
     SQLcon <- odbcDriverConnect(paste('driver={SQL Server}; server=',values$DB[i,1],'', sep = ""))
     collist <- sqlQuery(SQLcon, paste("Select COLUMN_NAME as ColumnName FROM ",values$DB[i,2],".INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME ='",values$DB[i,3],"'", sep = ""))
-    DetailsTable <- data.frame(Column = collist, Description = NA)
+    odbcClose(SQLcon)
+    values$DetailsTable <- data.frame(Database = rep(values$DB[i,2], nrow(collist)), Table = rep(values$DB[i,3], nrow(collist)), ColumnName = collist, Description = NA)
+    values$DetailsTableTemp <- values$DetailsTable %>% select(ColumnName, Description)
+      
+    }
     output$coltable <- DT::renderDataTable({
-      DT::datatable(DetailsTable, options = list(paging = F), selection = 'single', class = 'cell-border stripe', style = 'bootstrap',  editable = list(target = "cell", disable = list(columns = c(0:1))) )
+      DT::datatable(values$DetailsTableTemp, options = list(paging = F), selection = 'single', class = 'cell-border stripe', style = 'bootstrap',  editable = list(target = "cell", disable = list(columns = c(0:1))) )
     })
   })
+  #  proxy <- dataTableProxy(outputId = "coltable")
+  #  observeEvent(input$Save,{
+  #    observeEvent(input$coltable_cell_edit, {
+  #      info <- input$coltable_cell_edit
+  #      i <- info$row
+  #      j <- info$col
+  #      v <- info$value
+  #      values$DetailsTableTemp[i,j] <<- DT::coerceValue(v, values$DetailsTableTemp[i,j])
+  #      replaceData(proxy, values$DetailsTableTemp, resetPaging = F, rownames = F)
+  #    })
+  #   values$DetailsTable
+  # #   write.csv(SaveTemp, file = "Columns.csv", row.names = F)
+  # # })
 }
  
 shinyApp(ui, server)
