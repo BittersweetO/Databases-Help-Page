@@ -97,10 +97,10 @@ server <- function(input, output){
     req(input$table_rows_selected)
     i <- input$table_rows_selected
     SQLcon <- odbcDriverConnect(paste('driver={SQL Server}; server=',values$DB[i,1],'', sep = ""))
-    collist <- sqlQuery(SQLcon, paste("Select COLUMN_NAME FROM ",values$DB[i,2],".INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME ='",values$DB[i,3],"' ORDER BY COLUMN_NAME", sep = ""))
+    collist <- sqlQuery(SQLcon, paste("Select COLUMN_NAME as ColumnName FROM ",values$DB[i,2],".INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME ='",values$DB[i,3],"'", sep = ""))
     DetailsTable <- data.frame(Column = collist, Description = NA)
     output$coltable <- DT::renderDataTable({
-      DT::datatable(DetailsTable, options = list(paging = F), selection = 'single', class = 'cell-border stripe', style = 'bootstrap' )
+      DT::datatable(DetailsTable, options = list(paging = F), selection = 'single', class = 'cell-border stripe', style = 'bootstrap',  editable = list(target = "cell", disable = list(columns = c(0:1))) )
     })
   })
 }
